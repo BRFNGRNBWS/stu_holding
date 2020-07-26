@@ -54,7 +54,7 @@ class App extends React.Component {
 							
 							<br />
 							
-							<canvas className="imgStage" id="imgStage" useMap="imgMap" />
+							<canvas className="imgStage" id="imgStage" useMap="imgMap" width={imgSize.x} height={imgSize.y} />
 							
 							<map name="imgMap">
 								<area shape="poly" />
