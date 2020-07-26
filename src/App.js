@@ -4,10 +4,10 @@ import SearchBar from './SearchBar';
 import $ from 'jquery';
 			
 //var coordPercentages = [[0.28.981, 0.34518, 0.75370, 0.35926, 0.72500, 0.70741, 0.28611, 0.70519], []];
-const imgSize = {x: 1080, y: 1350};
+const imgSize = {x: 486, y: 608};
 var scale = 1.0;
-var img = new Image;
-img.src = '/stu.png';
+var img = new Image();
+img.src = '/stu_small.png';
 
 function resizeStage(w){
 	scale = w / imgSize.x;
