@@ -1,36 +1,40 @@
 import React from 'react';
 import $ from 'jquery';
+import './SearchBar.scss';
 import Autosuggest from 'react-autosuggest';
-import axios from 'axios'
 
-//used to replace the text in the searchbar once an option is clicked, needs to be album name
-const getSuggestionValue = suggestion => suggestion.name;
+var suggs = [];
 
 const renderSuggestion = suggestion => (
-	<div>
-		{suggestion.name}
+	<div className='searchContainer'>
+		<img className='searchImage' src={suggestion.image[1]["#text"]} ></img>
+		<div className='searchTextContainer'>
+			<p>
+				<span className='.searchName'>{suggestion.name}</span>
+				<br/>
+				<span className='.searchArtist'>{suggestion.artist}</span>
+			</p>
+		</div>
 	</div>
 );
 
-const getSugg = value => {
+function getSugg(value){
 	var lastfm = getLastFM(value);
-	
-	return lastfm;
+
 };
 
 function getLastFM(value){
-	var data = [];
 	var url = "https://ws.audioscrobbler.com/2.0/?method=album.search&album="
 		+ value
 		+ "&api_key=" + process.env.REACT_APP_LASTFM_KEY
 		+ "&format=json&limit=4";
 	
-	console.log("url: " + url);
-	axios.get(url).then(response => data = response);
-	
-	console.log("data");
-	console.log(data);
-	return value.length === 0 || data.length === 0 ? [] : data["results"]["albummatches"]["album"];
+	$.ajax({url: url, success: function(response){
+		//console.log("data");
+		//console.log(data);
+		suggs = response.results.albummatches.album;
+		return suggs;
+	}});
 };
 
 class SearchBar extends React.Component {
@@ -42,7 +46,7 @@ class SearchBar extends React.Component {
 		};
 	};
 	
-	onChange = (event, {newValue}) => {
+	onChange = (event, {newValue, method}) => {
 		this.setState({
 			value: newValue
 		});
@@ -50,8 +54,11 @@ class SearchBar extends React.Component {
 	
 	//called every time suggestions need to be updated
 	onSuggestionsFetchRequested = ({value}) => {
+		getSugg(value);
+		//console.log("suggs");
+		//console.log(suggs);
 		this.setState({
-			suggestions: getSugg(value)
+			suggestions: suggs
 		});
 	}
 	
@@ -60,6 +67,13 @@ class SearchBar extends React.Component {
 		this.setState({
 			suggestions: []
 		});
+	};
+	
+	//when a suggestion is clicked
+	getSuggestionValue = (suggestion) => {
+		this.props.selectedAlbum(suggestion);
+		
+		return suggestion.name;
 	};
 	
 	render(){
@@ -77,7 +91,7 @@ class SearchBar extends React.Component {
 				suggestions={suggestions}
 				onSuggestionsFetchRequested={this.onSuggestionsFetchRequested}
 				onSuggestionsClearRequested={this.onSuggestionsClearRequested}
-				getSuggestionValue={getSuggestionValue}
+				getSuggestionValue={this.getSuggestionValue}
 				renderSuggestion={renderSuggestion}
 				inputProps={inputProps}
 			/>
