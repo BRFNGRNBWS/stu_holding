@@ -2,26 +2,45 @@ import React from 'react';
 import './App.scss';
 import SearchBar from './SearchBar';
 import $ from 'jquery';
+import ImageMapper from 'react-image-mapper';
 			
-//var coordPercentages = [[0.28.981, 0.34518, 0.75370, 0.35926, 0.72500, 0.70741, 0.28611, 0.70519], []];
+const coordPercentages = [[0.28981, 0.34518, 0.75370, 0.35926, 0.72500, 0.70741, 0.28611, 0.70519]];
 const imgSize = {x: 486, y: 608};
 var scale = 1.0;
-var img = new Image();
-img.src = '/stu_small.png';
+var maps = {name: "my-map", areas: []};
+genMaps();
+
+function updateMapSize(w){
+	this.setState({width: w});
+};
 
 function resizeStage(w){
 	scale = w / imgSize.x;
-	$(".imgStage").width(w);
-	$(".imgStage").height(imgSize.y * scale);
+	var h = imgSize.y * scale;
+	updateMapSize(w);
+	$(".albumStage").width(w);
+	$(".albumStage").height(h);
+};
+
+function calcCoords(which){
+	var output = [];
+	for (var i = 0; i < coordPercentages[which].length; i++){
+		if (i % 2 === 0)
+			output.push(coordPercentages[which][i] * imgSize.x);
+		else
+			output.push(coordPercentages[which][i] * imgSize.y);
+	};
+	return output;
+};
+
+function genMaps(){
+	for (var i = 0; i < coordPercentages.length; i++){
+		maps["areas"].push({name: i.toString(), shape: "poly", coords: calcCoords(i), strokeColor: "red"});
+	};
 };
 
 $(document).ready(function(){
 	resizeStage($(".container").width());
-	var canvas = document.getElementById("imgStage");
-	var ctx = canvas.getContext("2d");
-	img.onload = function(){
-		ctx.drawImage(img, 0, 0, img.width, img.height, 0, 0, canvas.width, canvas.height);
-	};
 });
 
 $(window).resize(function(){
@@ -54,18 +73,25 @@ class App extends React.Component {
 							
 							<br />
 							
-							<canvas className="imgStage" id="imgStage" useMap="imgMap" width={imgSize.x} height={imgSize.y} />
+							<div className="pictureHolder">
+								<canvas className="albumStage" id="imgStage" width={imgSize.x} height={imgSize.y} />
+								<ImgMap className="imgWithMap" src="./stu_small.png" imgWidth={imgSize.x} width={imgSize.x} map={maps} onClick={area => this.clicked(area)} />
+							</div>
 							
-							<map name="imgMap">
-								<area shape="poly" />
-							</map>
 						</main>
 					</div>
 				</div>
 			</>
 		);
 	};
-
 }
 
+class ImgMap extends ImageMapper {
+	constructor(props){
+		super(props);
+		console.log(props);
+		updateMapSize = updateMapSize.bind(this);
+	};
+};	
+			
 export default App;
