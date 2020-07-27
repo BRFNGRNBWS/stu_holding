@@ -82,7 +82,7 @@ function spotClicked(area){
 	placePicked = number;
 	for (var i = 0; i < maps["areas"].length; i++){
 		if (i === placePicked)
-			maps["areas"][i]["preFillColor"] = "rgba(255, 0, 0, 0.2)";
+			maps["areas"][i]["preFillColor"] = "rgba(255, 0, 0, 0.4)";
 		else
 			maps["areas"][i]["preFillColor"] = "rgba(0, 0, 0, 0.1)";
 	};
@@ -115,6 +115,7 @@ function renderAlbum(album){
 };
 
 async function renderFinal(){
+	$(".renderButton").html("rendering...");
 	imageDataURLSArray = [];
 	var canvas = document.getElementById("renderCanvas");
 	var ctx = canvas.getContext("2d");
@@ -197,6 +198,7 @@ class App extends React.Component {
 	
 	componentDidMount(){
 		updateMapSize = updateMapSize.bind(this);
+		document.title = "Stu Holds";
 	};
 	
 	//updated when an album is picked from the search bar

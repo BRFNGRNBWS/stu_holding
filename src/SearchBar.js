@@ -4,6 +4,10 @@ import './SearchBar.scss';
 import Autosuggest from 'react-autosuggest';
 
 var suggs = [];
+var date = new Date();
+var lastFMRetry = 0;
+var spotifyExpires = 0;
+var spotifyToken = "";
 
 const renderSuggestion = suggestion => (
 	<div className='searchContainer'>
@@ -18,23 +22,47 @@ const renderSuggestion = suggestion => (
 	</div>
 );
 
-function getSugg(value){
-	var lastfm = getLastFM(value);
-
+function getLastFM(value){
+	if (date.getTime() > lastFMRetry){
+		var url = "sdafsad.https://ws.audioscrobbler.com/2.0/?method=album.search&album="
+			+ value
+			+ "&api_key=" + process.env.REACT_APP_LASTFM_KEY
+			+ "&format=json&limit=4";
+		
+		$.ajax({url: url, dataType: 'json', success: function(response){
+			//console.log("data");
+			//console.log(data);
+			suggs = response.results.albummatches.album;
+			return suggs;
+		}, error: function(xhr, status, error){
+			lastFMRetry = date.getTime() + (1 * 60 * 1000)
+			getSpotify();
+		}});
+	} else {
+		getSpotify();
+	}
 };
 
-function getLastFM(value){
-	var url = "https://ws.audioscrobbler.com/2.0/?method=album.search&album="
-		+ value
-		+ "&api_key=" + process.env.REACT_APP_LASTFM_KEY
-		+ "&format=json&limit=4";
-	
-	$.ajax({url: url, success: function(response){
-		//console.log("data");
-		//console.log(data);
-		suggs = response.results.albummatches.album;
-		return suggs;
-	}});
+function getSpotify(value){
+	if (spotifyToken === "" || date.getTime() > spotifyExpires){
+		$.ajax({
+			url: "https://accounts.spotify.com/api/token",
+			type: "post",
+			data: {grant_type: "client_credentials"},
+			headers: {
+				Authorization: "Basic " + btoa(process.env.REACT_APP_SPOTIFY_CLIENTID) + ":" + btoa(process.env.REACT_APP_SPOTIFY_SECRET)
+			},
+			dataType: 'json',
+			success: function(data){
+				console.log(data);
+				spotifyToken = data["access_token"];
+				spotifyExpires = date.getTime() + (data["expires_in"] * 1000);
+			},
+			error: function(data){
+				
+			}
+		});
+	}
 };
 
 class SearchBar extends React.Component {
@@ -54,7 +82,7 @@ class SearchBar extends React.Component {
 	
 	//called every time suggestions need to be updated
 	onSuggestionsFetchRequested = ({value}) => {
-		getSugg(value);
+		getLastFM(value);
 		//console.log("suggs");
 		//console.log(suggs);
 		this.setState({
