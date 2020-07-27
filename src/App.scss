@@ -41,6 +41,7 @@
 }
 
 .pictureHolder {
+	margin-top: .8rem;
 	position: relative;
 }
 
@@ -51,8 +52,25 @@
 }
 
 .renderCanvas {
+	display: none;
 }
 
 .renderImg {
+	margin-top: .8rem;
 	width: 100%;
+	display: none;
+}
+
+.buttonContainer{
+	margin-top: .8rem;
+	display: flex;
+	justify-content: space-between;
+}
+
+.copyButton, .saveButton {
+	display: none;
+}
+
+.startOverButton {
+	border-color: red;
 }

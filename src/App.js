@@ -8,10 +8,14 @@ import Perspective from './perspective.js';
 //coordinates of the corners of each cutout, expressed as a percentage of the image width/height
 //format [x, y, x, y, x, y...]
 //always start coords from the top left of where the album should be and go clockwise
+//this is also the order the pictures will be rendered in, so the album at the first
+//coords will be rendered first, then the next one put on top of that, etc.
 const coordPercentages = [
 	[0.74537, 0.32370, 0.83981, 0.32148, 0.84444, 0.39407, 0.74907, 0.39556],
 	[0.28981, 0.34518, 0.75370, 0.35926, 0.72500, 0.70741, 0.28611, 0.70519]
 ];
+//the cutout that is initially selected once the page loads
+const initialSelected = 1;
 //size of the preview image, mine is /public/stu_small.png
 //the actual size of this image doesnt really matter, it will always be scaled to the page appropriately,
 //i just scaled it down to this for data/loading time saving, and because it's the biggest it ever scales to on the page
@@ -25,7 +29,12 @@ var maps = {name: "my-map", areas: []};
 var placePicked = 0;
 var albumsPicked = [];
 var renderedImage = "";
+var imageDataURLSArray = [];
 genMaps();
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 function updateMapSize(w){
 	this.setState({canWidth: w});
@@ -67,6 +76,7 @@ function genMaps(){
 	};
 };
 
+//when one of the cutout areas is clicked on
 function spotClicked(area){
 	var number = parseInt(area["name"]);
 	placePicked = number;
@@ -93,69 +103,84 @@ function renderAlbum(album){
 		p.draw(parseCoords(m));
 	};
 	img.src = album["image"][album["image"].length - 1]["#text"];
+	
+	if (albumsPicked.length === coordPercentages.length){
+		var allImg = true;
+		albumsPicked.forEach(album => {
+			if (album["image"].length > 0)
+				allImg = false;
+		});
+		$(".renderButton").prop("disabled", false);
+	}
 };
 
-function renderFinal(){
+async function renderFinal(){
+	imageDataURLSArray = [];
 	var canvas = document.getElementById("renderCanvas");
 	var ctx = canvas.getContext("2d");
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
 	for (var i = 0; i < coordPercentages.length; i++){
-		renderImages(ctx, i);
+		await renderImages(canvas, ctx, i);
+	};
+
+	while (coordPercentages.length !== imageDataURLSArray.length){
+		await sleep(500);
+	};
+
+	for (var i = 0; i < coordPercentages.length; i++){
+		await drawRenderedImages(ctx, i);	
 	};
 	
-	/*var coords = calcCoords(0, fullImgSize);
 	var img = new Image();
-	img.crossOrigin = "anonymous";
 	img.onload = function(){
-		console.log("coords " + 0);
-		console.log(coords);
-		var p = new Perspective(ctx, img);
-		console.log("Drawing " + img.src);
-		p.draw(parseCoords(coords));
+		ctx.drawImage(img, 0, 0);
+		//console.log(canvas.toDataURL());
+		$(".renderImg").attr("src", canvas.toDataURL());
+		$(".pictureHolder").css("display", "none");
+		$(".renderImg").css("display", "block");
+		$(".renderButton").html("rendered!");
+		$(".renderButton").prop("disabled", true);
+		$(".copyButton").css("display", "block");
+		$(".saveButton").css("display", "block");
 	};
-	img.src = albumsPicked[0]["image"][albumsPicked[0]["image"].length - 1]["#text"];	
-	console.log(img.src);
-	
-	var coords1 = calcCoords(1, fullImgSize);
-	var img1 = new Image();
-	img1.crossOrigin = "anonymous";
-	img1.onload = function(){
-		console.log("coords " + 1);
-		console.log(coords1);
-		var p1 = new Perspective(ctx, img1);
-		console.log("Drawing " + img1.src);
-		p1.draw(parseCoords(coords1));
-	};
-	img1.src = albumsPicked[1]["image"][albumsPicked[1]["image"].length - 1]["#text"];	
-	console.log(img1.src);*/
-	
-	var img2 = new Image();
-	img2.onload = function(){
-		ctx.drawImage(img2, 0, 0);
-	};
-	img2.src = fullImage;
-	
-	//console.log(canvas.toDataURL());
+	img.src = fullImage;
 };
 
-function renderImages(ctx, i){
-	console.log("i = " + i);
+function renderImages(canvas, ctx, i){
 	var coords = calcCoords(i, fullImgSize);
 	var img = new Image();
 	img.crossOrigin = "anonymous";
 	img.onload = function(){
-		console.log("coords " + i);
-		console.log(coords);
 		var p = new Perspective(ctx, img);
-		console.log("Drawing " + img.src);
 		p.draw(parseCoords(coords));
+		imageDataURLSArray[i] = canvas.toDataURL();
 	};
-	img.src = albumsPicked[i]["image"][albumsPicked[i]["image"].length - 1]["#text"];	
-	console.log(img.src);
+	img.src = albumsPicked[i]["image"][albumsPicked[i]["image"].length - 1]["#text"];
 };
 
+function drawRenderedImages(ctx, i){
+	var img = new Image();
+	img.onload = function(){
+		ctx.drawImage(img, 0, 0);
+	};
+	img.src = imageDataURLSArray[i];
+};
+
+function startOver(){
+	if (albumsPicked.length === coordPercentages.length)
+		$(".renderButton").prop("disabled", false);
+	else
+		$(".renderButton").prop("disabled", true);
+	$(".pictureHolder").css("display", "block");
+	$(".renderImg").css("display", "none");
+	$(".renderButton").html("render");
+	$(".copyButton").css("display", "none");
+	$(".saveButton").css("display", "none");
+}
+
 $(document).ready(function(){
-	spotClicked({name: "0"});
+	$(".renderButton").prop("disabled", true);
+	spotClicked({name: initialSelected.toString()});
 	resizeStage($(".container").width());
 	$(window).resize(function(){
 		resizeStage($(".container").width());
@@ -179,8 +204,12 @@ class App extends React.Component {
 		renderAlbum(album);
 	};
 	
-	renderIt = (idk) => {
+	renderIt = () => {
 		renderFinal();
+	};
+	
+	startOver = () => {
+		startOver();
 	};
 	
 	render(){
@@ -195,15 +224,20 @@ class App extends React.Component {
 						<main>
 							<SearchBar className="albumText" selectedAlbum={this.updateAlbum} />
 							
-							<br />
-							
 							<div className="pictureHolder">
 								<canvas className="albumStage" id="img0" width={imgSize.x} height={imgSize.y} />
 								<canvas className="albumStage" id="img1" width={imgSize.x} height={imgSize.y} />
 								<ImgMap className="imgWithMap" src={previewImage} imgWidth={imgSize.x} width={this.state.canWidth} map={maps} onClick={area => spotClicked(area)} />
 							</div>
-							<button onClick={this.renderIt}>render</button>
+							
 							<img className="renderImg" id="renderImg" />
+							
+							<div className="buttonContainer">
+								<button className="renderButton" onClick={this.renderIt}>render</button>
+								<button className="startOverButton" onClick={this.startOver}>start over</button>
+								<button className="copyButton" onClick={null}>copy image</button>
+								<button className="saveButton" onClick={null}>save image</button>
+							</div>
 						</main>
 					</div>
 				</div>
