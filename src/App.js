@@ -10,20 +10,21 @@ import Perspective from './perspective.js';
 //always start coords from the top left of where the album should be and go clockwise
 //this is also the order the pictures will be rendered in, so the album at the first
 //coords will be rendered first, then the next one put on top of that, etc.
-const coordPercentages = [
+/*const coordPercentages = [
 	[0.74537, 0.32370, 0.83981, 0.32148, 0.84444, 0.39407, 0.74907, 0.39556],
 	[0.28981, 0.34518, 0.75370, 0.35926, 0.72500, 0.70741, 0.28611, 0.70519]
-];
+];*/
+const coordPercentages = [[0.12675, 0.33468, 0.23415, 0.210398, 0.35953, 0.256701, 0.29920, 0.50446]];
 //the cutout that is initially selected once the page loads
-const initialSelected = 1;
+const initialSelected = 0;
 //size of the preview image, mine is /public/stu_small.png
 //the actual size of this image doesnt really matter, it will always be scaled to the page appropriately,
 //i just scaled it down to this for data/loading time saving, and because it's the biggest it ever scales to on the page
-const imgSize = {x: 486, y: 608};
-const previewImage = "/stu_small.png";
+const imgSize = {x: 486, y: 365};
+const previewImage = "/luigi_small.png";
 //size of the full image, /public/stu.png
-const fullImgSize = {x: 1080, y: 1350};
-const fullImage = "/stu.png";
+const fullImgSize = {x: 1641, y: 1231};
+const fullImage = "/luigi.png";
 var scale = 1.0;
 var maps = {name: "my-map", areas: []};
 var placePicked = 0;
@@ -100,18 +101,19 @@ function renderAlbum(album){
 	img.onload = function(){
 		var p = new Perspective(ctx, img);
 		var m = maps["areas"][placePicked]["coords"];
-		p.draw(parseCoords(m));
+		p.draw(parseCoords(m));	
+
+		//selects the next area automatically
+		if (placePicked === coordPercentages.length - 1)
+			spotClicked(maps["areas"][0]);
+		else
+			spotClicked(maps["areas"][placePicked + 1]);
 	};
 	img.src = album["image"][album["image"].length - 1]["#text"];
 	
 	if (albumsPicked.length === coordPercentages.length){
-		var allImg = true;
-		albumsPicked.forEach(album => {
-			if (album["image"].length > 0)
-				allImg = false;
-		});
 		$(".renderButton").prop("disabled", false);
-	}
+	};
 };
 
 async function renderFinal(){
@@ -141,8 +143,6 @@ async function renderFinal(){
 		$(".renderImg").css("display", "block");
 		$(".renderButton").html("rendered!");
 		$(".renderButton").prop("disabled", true);
-		$(".copyButton").css("display", "block");
-		$(".saveButton").css("display", "block");
 	};
 	img.src = fullImage;
 };
@@ -175,9 +175,7 @@ function startOver(){
 	$(".pictureHolder").css("display", "block");
 	$(".renderImg").css("display", "none");
 	$(".renderButton").html("render");
-	$(".copyButton").css("display", "none");
-	$(".saveButton").css("display", "none");
-}
+};
 
 $(document).ready(function(){
 	$(".renderButton").prop("disabled", true);
@@ -214,6 +212,10 @@ class App extends React.Component {
 		startOver();
 	};
 	
+	copyImg = () => {
+		
+	};
+	
 	render(){
 		return (
 			<>
@@ -223,9 +225,9 @@ class App extends React.Component {
 							<h1>Stu Holds</h1>
 						</header>
 						
+						<SearchBar className="albumText" selectedAlbum={this.updateAlbum} />
+			
 						<main>
-							<SearchBar className="albumText" selectedAlbum={this.updateAlbum} />
-							
 							<div className="pictureHolder">
 								<canvas className="albumStage" id="img0" width={imgSize.x} height={imgSize.y} />
 								<canvas className="albumStage" id="img1" width={imgSize.x} height={imgSize.y} />
@@ -237,8 +239,6 @@ class App extends React.Component {
 							<div className="buttonContainer">
 								<button className="renderButton" onClick={this.renderIt}>render</button>
 								<button className="startOverButton" onClick={this.startOver}>start over</button>
-								<button className="copyButton" onClick={null}>copy image</button>
-								<button className="saveButton" onClick={null}>save image</button>
 							</div>
 						</main>
 					</div>

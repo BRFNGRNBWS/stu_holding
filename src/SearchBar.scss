@@ -5,13 +5,24 @@ input {
 .searchContainer {
 	width: 100%;
 	display: flex;
+	padding: 0px;
 	align-items: center;
+	border-top: 1px solid white;
+	cursor: default;
+}
+
+li:last-child > .searchContainer {
+	border-bottom: 1px solid white;
+}
+
+.searchContainer:hover {
+	background-color: rgba(1, 1, 1, 0.2);
 }
 
 .searchImage {
 	order: 0;
-	height: 100%;
-	object-fit: cover;
+	height: 5ex;
+	width: 5ex;
 }
 
 .searchTextContainer {
@@ -21,10 +32,19 @@ input {
 	order: 1;
 }
 
+.searchTextContainer > p {
+	margin: 0px;
+}
+
 .searchName {
 	order: 0;
 }
 
 .searchArtist {
 	order: 1;
+}
+
+ul {
+	list-style-type: none;
+	padding-left: .1rem;
 }

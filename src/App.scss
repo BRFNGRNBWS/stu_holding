@@ -25,6 +25,7 @@
 .albumText {
 	width: 100%;
 	max-width: 100vw;
+	z-index: 10;
 }
 
 .parentContainer {
@@ -66,10 +67,6 @@
 	display: flex;
 	justify-content: space-between;
 	flex-wrap: wrap;
-}
-
-.copyButton, .saveButton {
-	display: none;
 }
 
 .startOverButton {
