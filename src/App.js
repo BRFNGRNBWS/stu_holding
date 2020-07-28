@@ -10,21 +10,20 @@ import Perspective from './perspective.js';
 //always start coords from the top left of where the album should be and go clockwise
 //this is also the order the pictures will be rendered in, so the album at the first
 //coords will be rendered first, then the next one put on top of that, etc.
-/*const coordPercentages = [
+const coordPercentages = [
 	[0.74537, 0.32370, 0.83981, 0.32148, 0.84444, 0.39407, 0.74907, 0.39556],
 	[0.28981, 0.34518, 0.75370, 0.35926, 0.72500, 0.70741, 0.28611, 0.70519]
-];*/
-const coordPercentages = [[0.12675, 0.33468, 0.23415, 0.210398, 0.35953, 0.256701, 0.29920, 0.50446]];
+];
 //the cutout that is initially selected once the page loads
-const initialSelected = 0;
+const initialSelected = 1;
 //size of the preview image, mine is /public/stu_small.png
 //the actual size of this image doesnt really matter, it will always be scaled to the page appropriately,
 //i just scaled it down to this for data/loading time saving, and because it's the biggest it ever scales to on the page
-const imgSize = {x: 486, y: 365};
-const previewImage = "/luigi_small.png";
+const imgSize = {x: 486, y: 608};
+const previewImage = "/stu_small.png";
 //size of the full image, /public/stu.png
-const fullImgSize = {x: 1641, y: 1231};
-const fullImage = "/luigi.png";
+const fullImgSize = {x: 1080, y: 1350};
+const fullImage = "/stu.png";
 var scale = 1.0;
 var maps = {name: "my-map", areas: []};
 var placePicked = 0;
