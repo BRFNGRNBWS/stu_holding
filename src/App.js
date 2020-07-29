@@ -3,7 +3,8 @@ import './App.scss';
 import SearchBar from './SearchBar';
 import $ from 'jquery';
 import ImageMapper from 'react-image-mapper';
-import Perspective from './perspective.js';
+import Perspective from './perspective.min.js';
+//import db from './db';
 
 //coordinates of the corners of each cutout, expressed as a percentage of the image width/height
 //format [x, y, x, y, x, y...]
@@ -30,6 +31,8 @@ var placePicked = 0;
 var albumsPicked = [];
 var renderedImage = "";
 var imageDataURLSArray = [];
+var leaderShown = false;
+var leaderboardLength = 10;
 genMaps();
 
 function sleep(ms) {
@@ -47,6 +50,18 @@ function resizeStage(w){
 	updateMapSize(w);
 	$(".albumStage").width(w);
 	$(".albumStage").height(h);
+	
+	if (scale < 1){
+		$(".leaderboard").css("overflow", "scroll");
+		$(".leaderboard").css("white-space", "nowrap");
+		$(".leaderboard td:nth-child(1)").css("display", "none");
+		$(".leaderboard th:nth-child(1)").css("display", "none");
+	}else {
+		$(".leaderboard").css("overflow", "initial");
+		$(".leaderboard").css("white-space", "initial");
+		$(".leaderboard td:nth-child(1)").css("display", "block");
+		$(".leaderboard th:nth-child(1)").css("display", "block");
+	}
 };
 
 //calculates the pixel coordinates of the albums based on the percentage coordinate array, [x, y, x, y...] format
@@ -117,6 +132,7 @@ function renderAlbum(album){
 
 async function renderFinal(){
 	$(".renderButton").html("rendering...");
+	addToSQL();
 	imageDataURLSArray = [];
 	var canvas = document.getElementById("renderCanvas");
 	var ctx = canvas.getContext("2d");
@@ -146,6 +162,44 @@ async function renderFinal(){
 	img.src = fullImage;
 };
 
+function addslashes( str ) {
+    return (str + '').replace(/[\\"']/g, '\\$&').replace(/\u0000/g, '\\0');
+}
+
+async function addToSQL(){
+	console.log("addToSQL");
+	for (var i = 0; i < coordPercentages.length; i++){
+		var fullAlbum = albumsPicked[i]["artist"].toLowerCase().replace(/['"/\\.,\-_]/g, "").replace(/\&/g, "and") + " - "
+			+ albumsPicked[i]["name"].toLowerCase().replace(/['"/\\.,\-_]/g, "");
+		var sql = "INSERT INTO mostPicked (album, name, artist, url, timesPicked) VALUES ("
+			+ "'" + fullAlbum + "', '"
+			+ addslashes(encodeURIComponent(albumsPicked[i]["name"])) + "', '"
+			+ addslashes(encodeURIComponent(albumsPicked[i]["artist"])) + "', '"
+			+ albumsPicked[i]["image"][1]["#text"] +"', 1) "
+			+ "ON DUPLICATE KEY UPDATE timesPicked = timesPicked+1";
+		console.log(sql);
+		
+		$.ajax({
+			url: "/addToDB",
+			type: "post",
+			headers: {
+				sql_string: sql,
+				sqlhost: process.env.REACT_APP_SQL_HOST,
+				sqldatabase: process.env.REACT_APP_SQL_DATABASE,
+				sqluser: process.env.REACT_APP_SQL_USERNAME
+			},
+			dataType: "json",
+			success: function(data){
+				console.log("successful: ");
+				console.log(data);
+			},
+			error: function(data){
+				console.log("error " + data);
+			}
+		});
+	};
+};
+
 function renderImages(canvas, ctx, i){
 	var coords = calcCoords(i, fullImgSize);
 	var img = new Image();
@@ -167,6 +221,7 @@ function drawRenderedImages(ctx, i){
 };
 
 function startOver(){
+	hideLeader();
 	if (albumsPicked.length === coordPercentages.length)
 		$(".renderButton").prop("disabled", false);
 	else
@@ -174,6 +229,71 @@ function startOver(){
 	$(".pictureHolder").css("display", "block");
 	$(".renderImg").css("display", "none");
 	$(".renderButton").html("render");
+};
+
+function toggleLeader(){
+	if (leaderShown) hideLeader();
+	else showLeader();
+};
+
+function showLeader(){
+	$(".searchbarDiv").css("display", "none");
+	$(".pictureHolder").css("display", "none");
+	$(".renderImg").css("display", "none");
+	$(".leaderboardButton").html("hide leaderboard");
+	$(".leaderboard").css("display", "block");
+	leaderShown = true;
+	
+	var sql = "SELECT * FROM mostPicked ORDER BY timesPicked DESC LIMIT 0, " + (leaderboardLength - 1);
+	
+	$.ajax({
+		url: "/addToDB",
+		type: "post",
+		headers: {
+			sql_string: sql,
+			sqlhost: process.env.REACT_APP_SQL_HOST,
+			sqldatabase: process.env.REACT_APP_SQL_DATABASE,
+			sqluser: process.env.REACT_APP_SQL_USERNAME
+		},
+		dataType: "json",
+		success: function(data){
+			var tableBody = "<tr> <th></th> <th>Name</th> <th>Artist</th> <th>Times Picked</th> </tr>";
+			for (var i = 0; i < data.length; i++){
+				tableBody += 
+					"<tr>" +
+						"<td><img src='" + data[i]["url"] + "' /></td>" +
+						"<td>" + decodeURIComponent(data[i]["name"]) + "</td>" +
+						"<td>" + decodeURIComponent(data[i]["artist"]) + "</td>" +
+						"<td>" + data[i]["timesPicked"] + "</td>" +
+					"</tr>";
+			};
+			$(".leaderboard").html(tableBody);
+		},
+		error: function(data){
+			console.log("error " + data);
+		}
+	});
+	
+
+};
+
+function hideLeader(){
+	$(".searchbarDiv").css("display", "block");
+	$(".pictureHolder").css("display", "block");
+	$(".renderImg").css("display", "block");
+	$(".leaderboardButton").html("show leaderboard");
+	$(".leaderboard").css("display", "none");
+	$(".leaderboard").html("");
+	
+	if ($(".renderButton").html() === "rendered!"){
+		$(".pictureHolder").css("display", "none");
+		$(".renderImg").css("display", "block");
+	}else {
+		$(".pictureHolder").css("display", "block");
+		$(".renderImg").css("display", "none");
+	};
+	
+	leaderShown = false;
 };
 
 $(document).ready(function(){
@@ -211,8 +331,8 @@ class App extends React.Component {
 		startOver();
 	};
 	
-	copyImg = () => {
-		
+	toggleLeader = () => {
+		toggleLeader();
 	};
 	
 	render(){
@@ -221,10 +341,12 @@ class App extends React.Component {
 				<div className="parentContainer">
 					<div className="container">
 						<header className="header">
-							<h1>Stu Holds</h1>
+							<h1>Stu Holding</h1>
 						</header>
 						
-						<SearchBar className="albumText" selectedAlbum={this.updateAlbum} />
+						<div className="searchbarDiv">
+							<SearchBar className="albumText" selectedAlbum={this.updateAlbum} />
+						</div>
 			
 						<main>
 							<div className="pictureHolder">
@@ -235,8 +357,13 @@ class App extends React.Component {
 							
 							<img className="renderImg" id="renderImg" />
 							
+							<br />
+							
+							<table className="leaderboard"></table>
+							
 							<div className="buttonContainer">
 								<button className="renderButton" onClick={this.renderIt}>render</button>
+								<button className="leaderboardButton" onClick={this.toggleLeader}>show leaderboard</button>
 								<button className="startOverButton" onClick={this.startOver}>start over</button>
 							</div>
 						</main>

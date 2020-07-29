@@ -63,7 +63,6 @@
 }
 
 .buttonContainer{
-	margin-top: .8rem;
 	display: flex;
 	justify-content: space-between;
 	flex-wrap: wrap;
@@ -71,4 +70,26 @@
 
 .startOverButton {
 	border-color: red;
+}
+
+.leaderboard {
+	display: none;
+	width: 100%;
+	margin-bottom: .8rem;
+}
+
+.leaderboard tr:nth-child(odd) {
+	background-color: rgba(0, 0, 0, 0.15);
+}
+
+.leaderboard td:nth-child(even), .leaderboard th:nth-child(even) {
+	background-color: rgba(0, 0, 0, 0.15);
+}
+
+.leaderboard img {
+	width: 8rem;
+}
+
+.leaderboard tr td:nth-child(4) {
+	text-align: center;
 }
