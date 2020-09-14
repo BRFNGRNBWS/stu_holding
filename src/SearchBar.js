@@ -11,7 +11,7 @@ var spotifyToken = "";
 //number of results to display in the search bar
 var numOfResults = 4;
 //number of minutes to switch between spotify and lastfm, change to 0 to just use lastfm
-var switchEvery = 5;
+var switchEvery = 0;
 
 const renderSuggestion = suggestion => (
 	<div className='searchContainer'>
@@ -106,11 +106,12 @@ function spotifyToLast(response){
 			image: [
 				{"#text": album["images"][album["images"].length - 1]["url"]},
 				{"#text": album["images"][album["images"].length - 2]["url"]},
+				{"#text": album["images"][0]["url"]},
 				{"#text": album["images"][0]["url"]}
 			]
 		});
 	});
-	console.log(output);
+	//console.log(output);
 	return output;
 };
 

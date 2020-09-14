@@ -4,7 +4,6 @@ const favicon = require('express-favicon');
 const path = require('path');
 const mysql = require('mysql');
 var bodyParser = require('body-parser');
-const port = process.env.PORT || 8080;
 const app = express();
 app.use(favicon(__dirname + '/build/favicon.ico'));
 // the __dirname is the current directory from where the script is running
@@ -38,11 +37,14 @@ async function query(query, host, database, user, password, res){
 };
 
 app.post('/addToDB', async function (req, res){
-	query(req["headers"]["sql_string"], req["headers"]["sqlhost"], req["headers"]["sqldatabase"], req["headers"]["sqluser"], "jabj2b5h1Z", res);
+	//console.log("password: " + process.env.REACT_APP_SQL_PASSWORD);
+	query(req["headers"]["sql_string"], req["headers"]["sqlhost"], req["headers"]["sqldatabase"], req["headers"]["sqluser"], process.env.REACT_APP_SQL_PASSWORD, res);
 });
 
 app.get('/*', function (req, res) {
 	res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
 
-app.listen(port);
+const server = app.listen(0, () => {
+    console.log('Example app listening at http://localhost:', server.address().port);
+});

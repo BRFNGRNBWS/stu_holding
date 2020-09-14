@@ -12,19 +12,26 @@ import Perspective from './perspective.min.js';
 //this is also the order the pictures will be rendered in, so the album at the first
 //coords will be rendered first, then the next one put on top of that, etc.
 const coordPercentages = [
-	[0.74537, 0.32370, 0.83981, 0.32148, 0.84444, 0.39407, 0.74907, 0.39556],
-	[0.28981, 0.34518, 0.75370, 0.35926, 0.72500, 0.70741, 0.28611, 0.70519]
+	[0.028703703703703703, 0.026851851851851852, 0.2833333333333333, 0.022222222222222223, 0.2824074074074074, 0.27870370370370373, 0.027777777777777776, 0.28055555555555556],
+	[0.3592592592592593, 0.025925925925925925, 0.6138888888888889, 0.019444444444444445, 0.6175925925925926, 0.27685185185185185, 0.3611111111111111, 0.28055555555555556],
+	[0.6990740740740741, 0.022222222222222223, 0.9592592592592593, 0.023148148148148147, 0.9583333333333334, 0.2796296296296296, 0.6972222222222222, 0.27870370370370373],
+	[0.03518518518518519, 0.3212962962962963, 0.2833333333333333, 0.3175925925925926, 0.2861111111111111, 0.5694444444444444, 0.037037037037037035, 0.5703703703703704],
+	[0.362962962962963, 0.3148148148148148, 0.6194444444444445, 0.3138888888888889, 0.6194444444444445, 0.5685185185185185, 0.36203703703703705, 0.5694444444444444],
+	[0.6990740740740741, 0.3101851851851852, 0.9555555555555556, 0.31203703703703706, 0.9490740740740741, 0.5685185185185185, 0.6962962962962963, 0.5666666666666667],
+	[0.22777777777777777, 0.8777777777777778, 0.49537037037037035, 0.8638888888888889, 0.5472222222222223, 0.9685185185185186, 0.2111111111111111, 0.9953703703703703]
 ];
 //the cutout that is initially selected once the page loads
-const initialSelected = 1;
-//size of the preview image, mine is /public/stu_small.png
+const initialSelected = 0;
+//size of the preview image
 //the actual size of this image doesnt really matter, it will always be scaled to the page appropriately,
 //i just scaled it down to this for data/loading time saving, and because it's the biggest it ever scales to on the page
-const imgSize = {x: 486, y: 608};
-const previewImage = "/stu_small.png";
+const imgSize = {x: 486, y: 486};
+const previewImage = "/top7albums-template_small.png";
 //size of the full image, /public/stu.png
-const fullImgSize = {x: 1080, y: 1350};
-const fullImage = "/stu.png";
+const fullImgSize = {x: 1080, y: 1080};
+const fullImage = "/top7albums-template.png";
+//the resolution of album image to get from api, a value from 1-4, 1 being highest res, 4 being lowest res
+const imgResolution = 2;
 var scale = 1.0;
 var maps = {name: "my-map", areas: []};
 var placePicked = 0;
@@ -123,12 +130,24 @@ function renderAlbum(album){
 		else
 			spotClicked(maps["areas"][placePicked + 1]);
 	};
-	img.src = album["image"][album["image"].length - 1]["#text"];
+	console.log(album["image"]);
+	img.src = album["image"][album["image"].length - imgResolution]["#text"];
 	
 	if (albumsPicked.length === coordPercentages.length){
+		$(".renderButton").css("display", "initial");
 		$(".renderButton").prop("disabled", false);
 	};
 };
+
+//clears all albums in the preview
+function clearAlbums(){
+	for (var i = 0; i < coordPercentages.length; i++){
+		var canvas = document.getElementById("img" + i);
+		var ctx = canvas.getContext("2d");
+		ctx.clearRect(0, 0, canvas.width, canvas.height);
+	}
+	albumsPicked = [];
+}
 
 async function renderFinal(){
 	$(".renderButton").html("rendering...");
@@ -139,6 +158,7 @@ async function renderFinal(){
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
 	for (var i = 0; i < coordPercentages.length; i++){
 		await renderImages(canvas, ctx, i);
+		await sleep(50);
 	};
 
 	while (coordPercentages.length !== imageDataURLSArray.length){
@@ -167,7 +187,7 @@ function addslashes( str ) {
 }
 
 async function addToSQL(){
-	console.log("addToSQL");
+	//console.log("addToSQL");
 	for (var i = 0; i < coordPercentages.length; i++){
 		var fullAlbum = albumsPicked[i]["artist"].toLowerCase().replace(/['"/\\.,\-_]/g, "").replace(/\&/g, "and") + " - "
 			+ albumsPicked[i]["name"].toLowerCase().replace(/['"/\\.,\-_]/g, "");
@@ -177,7 +197,7 @@ async function addToSQL(){
 			+ addslashes(encodeURIComponent(albumsPicked[i]["artist"])) + "', '"
 			+ albumsPicked[i]["image"][1]["#text"] +"', 1) "
 			+ "ON DUPLICATE KEY UPDATE timesPicked = timesPicked+1";
-		console.log(sql);
+		//console.log(sql);
 		
 		$.ajax({
 			url: "/addToDB",
@@ -190,17 +210,17 @@ async function addToSQL(){
 			},
 			dataType: "json",
 			success: function(data){
-				console.log("successful: ");
-				console.log(data);
+				//console.log("successful: ");
+				//console.log(data);
 			},
 			error: function(data){
-				console.log("error " + data);
+				//console.log("error " + data);
 			}
 		});
 	};
 };
 
-function renderImages(canvas, ctx, i){
+async function renderImages(canvas, ctx, i){
 	var coords = calcCoords(i, fullImgSize);
 	var img = new Image();
 	img.crossOrigin = "anonymous";
@@ -209,7 +229,7 @@ function renderImages(canvas, ctx, i){
 		p.draw(parseCoords(coords));
 		imageDataURLSArray[i] = canvas.toDataURL();
 	};
-	img.src = albumsPicked[i]["image"][albumsPicked[i]["image"].length - 1]["#text"];
+	img.src = albumsPicked[i]["image"][albumsPicked[i]["image"].length - imgResolution]["#text"];
 };
 
 function drawRenderedImages(ctx, i){
@@ -222,13 +242,11 @@ function drawRenderedImages(ctx, i){
 
 function startOver(){
 	hideLeader();
-	if (albumsPicked.length === coordPercentages.length)
-		$(".renderButton").prop("disabled", false);
-	else
-		$(".renderButton").prop("disabled", true);
+	clearAlbums();
+	$(".renderButton").css("display", "none");
 	$(".pictureHolder").css("display", "block");
 	$(".renderImg").css("display", "none");
-	$(".renderButton").html("render");
+	$(".renderButton").html("create album wall");
 };
 
 function toggleLeader(){
@@ -270,7 +288,7 @@ function showLeader(){
 			$(".leaderboard").html(tableBody);
 		},
 		error: function(data){
-			console.log("error " + data);
+			//console.log("error " + data);
 		}
 	});
 	
@@ -297,7 +315,7 @@ function hideLeader(){
 };
 
 $(document).ready(function(){
-	$(".renderButton").prop("disabled", true);
+	$(".renderButton").css("display", "none");
 	spotClicked({name: initialSelected.toString()});
 	resizeStage($(".container").width());
 	$(window).resize(function(){
@@ -315,7 +333,7 @@ class App extends React.Component {
 	
 	componentDidMount(){
 		updateMapSize = updateMapSize.bind(this);
-		document.title = "Stu Holds";
+		document.title = "Top 7 Albums";
 	};
 	
 	//updated when an album is picked from the search bar
@@ -341,7 +359,7 @@ class App extends React.Component {
 				<div className="parentContainer">
 					<div className="container">
 						<header className="header">
-							<h1>Stu Holding</h1>
+							<h1>Top 7 Albums</h1>
 						</header>
 						
 						<div className="searchbarDiv">
@@ -352,21 +370,33 @@ class App extends React.Component {
 							<div className="pictureHolder">
 								<canvas className="albumStage" id="img0" width={imgSize.x} height={imgSize.y} />
 								<canvas className="albumStage" id="img1" width={imgSize.x} height={imgSize.y} />
+								<canvas className="albumStage" id="img2" width={imgSize.x} height={imgSize.y} />
+								<canvas className="albumStage" id="img3" width={imgSize.x} height={imgSize.y} />
+								<canvas className="albumStage" id="img4" width={imgSize.x} height={imgSize.y} />
+								<canvas className="albumStage" id="img5" width={imgSize.x} height={imgSize.y} />
+								<canvas className="albumStage" id="img6" width={imgSize.x} height={imgSize.y} />
 								<ImgMap className="imgWithMap" src={previewImage} imgWidth={imgSize.x} width={this.state.canWidth} map={maps} onClick={area => spotClicked(area)} />
 							</div>
 							
 							<img className="renderImg" id="renderImg" />
 							
-							<br />
-							
 							<table className="leaderboard"></table>
 							
 							<div className="buttonContainer">
-								<button className="renderButton" onClick={this.renderIt}>render</button>
-								<button className="leaderboardButton" onClick={this.toggleLeader}>show leaderboard</button>
 								<button className="startOverButton" onClick={this.startOver}>start over</button>
+								<button className="renderButton" onClick={this.renderIt}>create album wall</button>
+							</div>
+							
+							<div className="buttonContainer1">
+								<button className="leaderboardButton" onClick={this.toggleLeader}>show leaderboard</button>
 							</div>
 						</main>
+						
+						<footer className="footer">
+							<div>
+								Powered by <a href="https://www.last.fm/home" target="_blank">Last.fm</a> and <a href="https://www.spotify.com" target="_blank">Spotify</a>.
+							</div>
+						</footer>
 					</div>
 				</div>
 				<canvas className="renderCanvas" id="renderCanvas" width={fullImgSize.x} height={fullImgSize.y} src={renderedImage} />
