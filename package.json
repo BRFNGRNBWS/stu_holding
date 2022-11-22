@@ -23,7 +23,7 @@
     "react-image-mapper": "^0.0.15",
     "react-konva": "^16.13.0-3",
     "react-native-fs": "^2.16.6",
-    "react-scripts": "3.4.1",
+    "react-scripts": "5.0.1",
     "request": "^2.88.2",
     "sql-template-strings": "^2.2.2",
     "use-image": "^1.0.6"
